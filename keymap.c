@@ -15,46 +15,49 @@
 #define KC_SLSH_HRM MT(MOD_LCTL,KC_SLSH)
 #define KC_SPC_HRM MT(MOD_LSFT,KC_SPC)
 
+bool bCamelCaseMode = false;
+int16_t LastOutputChord = 0;
+
 #define DEFINE_ALL_CHORDS \
-    DEFINE_CHORD(CHORD_YES, "yes ", KC_Y, KC_S_HRM)   CSEP\
-    DEFINE_CHORD(CHORD_VERY, "very ", KC_V, KC_Y) CSEP\
-    DEFINE_CHORD(CHORD_MUCH, "much ", KC_M, KC_C, KC_H_HRM) CSEP\
-    DEFINE_CHORD(CHORD_THE, "the ", KC_T, KC_H_HRM) CSEP\
-    DEFINE_CHORD(CHORD_TO, "to ", KC_T, KC_O) CSEP\
-    DEFINE_CHORD(CHORD_OF, "of ", KC_O, KC_F_HRM) CSEP\
-    DEFINE_CHORD(CHORD_AND, "and ", KC_N, KC_D_HRM) CSEP\
-    DEFINE_CHORD(CHORD_A, "a ", KC_A_HRM, KC_J_HRM) CSEP\
-    DEFINE_CHORD(CHORD_IN, "in ", KC_I, KC_N) CSEP\
-    DEFINE_CHORD(CHORD_THAT, "that ", KC_T, KC_H_HRM, KC_A_HRM) CSEP\
-    DEFINE_CHORD(CHORD_HAVE, "have ", KC_H_HRM, KC_A_HRM, KC_V) CSEP\
-    DEFINE_CHORD(CHORD_I, "I ", KC_I, KC_SPC_HRM) CSEP\
-    DEFINE_CHORD(CHORD_IT, "it ", KC_I, KC_T) CSEP\
-    DEFINE_CHORD(CHORD_FOR, "for ", KC_F_HRM, KC_SPC_HRM) CSEP\
-    DEFINE_CHORD(CHORD_NOT, "not ", KC_N, KC_T) CSEP\
-    DEFINE_CHORD(CHORD_ON, "on ", KC_O, KC_N) CSEP\
-    DEFINE_CHORD(CHORD_WITH, "with ", KC_W, KC_I) CSEP\
-    DEFINE_CHORD(CHORD_WITHOUT, "without ", KC_W, KC_O) CSEP\
-    DEFINE_CHORD(CHORD_HE, "he ", KC_H_HRM, KC_E) CSEP\
-    DEFINE_CHORD(CHORD_SHE, "she ", KC_S_HRM, KC_E) CSEP\
-    DEFINE_CHORD(CHORD_AS, "as ", KC_A_HRM, KC_S_HRM) CSEP\
-    DEFINE_CHORD(CHORD_YOU, "you ", KC_Y, KC_U) CSEP\
-    DEFINE_CHORD(CHORD_AT, "at ", KC_A_HRM, KC_T) CSEP\
-    DEFINE_CHORD(CHORD_CHORD, "chord ", KC_K_HRM, KC_O, KC_R, KC_D_HRM) CSEP\
-    DEFINE_CHORD(CHORD_ABOUT, "about ", KC_A_HRM, KC_B) CSEP\
-    DEFINE_CHORD(CHORD_ASK, "ask ", KC_A_HRM, KC_S_HRM, KC_K_HRM) CSEP\
-    DEFINE_CHORD(CHORD_BE, "be ", KC_B, KC_J_HRM) CSEP\
-    DEFINE_CHORD(CHORD_BECOME, "become ", KC_B, KC_M) CSEP\
-    DEFINE_CHORD(CHORD_BEGIN, "begin ", KC_B, KC_N) CSEP\
-    DEFINE_CHORD(CHORD_CALL, "call ", KC_C, KC_A_HRM, KC_L_HRM) CSEP\
-    DEFINE_CHORD(CHORD_CAN, "can ", KC_C, KC_A_HRM, KC_N) CSEP\
-    DEFINE_CHORD(CHORD_COME, "come ", KC_C, KC_O, KC_M) CSEP\
-    DEFINE_CHORD(CHORD_COULD, "could ", KC_C, KC_O, KC_U) CSEP\
-    DEFINE_CHORD(CHORD_DO, "do ", KC_D_HRM, KC_O) CSEP\
-    DEFINE_CHORD(CHORD_FEEL, "feel ", KC_F_HRM, KC_E, KC_L_HRM) CSEP\
-    DEFINE_CHORD(CHORD_GET, "get ", KC_G_HRM, KC_E) CSEP\
-    DEFINE_CHORD(CHORD_NT, SS_TAP(X_BSPC) "n't ", KC_T, KC_SCLN) CSEP\
-    DEFINE_CHORD(CHORD_ED, SS_TAP(X_BSPC) "ed ", KC_D_HRM, KC_SCLN) CSEP\
-    DEFINE_CHORD(CHORD_ING, SS_TAP(X_BSPC) "ing ", KC_G_HRM, KC_SCLN)
+    DEFINE_CHORD(CHORD_YES, "yes", KC_Y, KC_S_HRM)   CSEP\
+    DEFINE_CHORD(CHORD_VERY, "very", KC_V, KC_Y) CSEP\
+    DEFINE_CHORD(CHORD_MUCH, "much", KC_M, KC_C, KC_H_HRM) CSEP\
+    DEFINE_CHORD(CHORD_THE, "the", KC_T, KC_H_HRM) CSEP\
+    DEFINE_CHORD(CHORD_TO, "to", KC_T, KC_O) CSEP\
+    DEFINE_CHORD(CHORD_OF, "of", KC_O, KC_F_HRM) CSEP\
+    DEFINE_CHORD(CHORD_AND, "and", KC_N, KC_D_HRM) CSEP\
+    DEFINE_CHORD(CHORD_A, "a", KC_A_HRM, KC_J_HRM) CSEP\
+    DEFINE_CHORD(CHORD_IN, "in", KC_I, KC_N) CSEP\
+    DEFINE_CHORD(CHORD_THAT, "that", KC_T, KC_H_HRM, KC_A_HRM) CSEP\
+    DEFINE_CHORD(CHORD_HAVE, "have", KC_H_HRM, KC_A_HRM, KC_V) CSEP\
+    DEFINE_CHORD(CHORD_I, "I", KC_I, KC_SPC_HRM) CSEP\
+    DEFINE_CHORD(CHORD_IT, "it", KC_I, KC_T) CSEP\
+    DEFINE_CHORD(CHORD_FOR, "for", KC_F_HRM, KC_SPC_HRM) CSEP\
+    DEFINE_CHORD(CHORD_NOT, "not", KC_N, KC_T) CSEP\
+    DEFINE_CHORD(CHORD_ON, "on", KC_O, KC_N) CSEP\
+    DEFINE_CHORD(CHORD_WITH, "with", KC_W, KC_I) CSEP\
+    DEFINE_CHORD(CHORD_WITHOUT, "without", KC_W, KC_O) CSEP\
+    DEFINE_CHORD(CHORD_HE, "he", KC_H_HRM, KC_E) CSEP\
+    DEFINE_CHORD(CHORD_SHE, "she", KC_S_HRM, KC_E) CSEP\
+    DEFINE_CHORD(CHORD_AS, "as", KC_A_HRM, KC_S_HRM) CSEP\
+    DEFINE_CHORD(CHORD_YOU, "you", KC_Y, KC_U) CSEP\
+    DEFINE_CHORD(CHORD_AT, "at", KC_A_HRM, KC_T) CSEP\
+    DEFINE_CHORD(CHORD_CHORD, "chord", KC_K_HRM, KC_O, KC_R, KC_D_HRM) CSEP\
+    DEFINE_CHORD(CHORD_ABOUT, "about", KC_A_HRM, KC_B) CSEP\
+    DEFINE_CHORD(CHORD_ASK, "ask", KC_A_HRM, KC_S_HRM, KC_K_HRM) CSEP\
+    DEFINE_CHORD(CHORD_BE, "be", KC_B, KC_J_HRM) CSEP\
+    DEFINE_CHORD(CHORD_BECOME, "become", KC_B, KC_M) CSEP\
+    DEFINE_CHORD(CHORD_BEGIN, "begin", KC_B, KC_N) CSEP\
+    DEFINE_CHORD(CHORD_CALL, "call", KC_C, KC_A_HRM, KC_L_HRM) CSEP\
+    DEFINE_CHORD(CHORD_CAN, "can", KC_C, KC_A_HRM, KC_N) CSEP\
+    DEFINE_CHORD(CHORD_COME, "come", KC_C, KC_O, KC_M) CSEP\
+    DEFINE_CHORD(CHORD_COULD, "could", KC_C, KC_O, KC_U) CSEP\
+    DEFINE_CHORD(CHORD_DO, "do", KC_D_HRM, KC_O) CSEP\
+    DEFINE_CHORD(CHORD_FEEL, "feel", KC_F_HRM, KC_E, KC_L_HRM) CSEP\
+    DEFINE_CHORD(CHORD_GET, "get", KC_G_HRM, KC_E) CSEP\
+    DEFINE_CHORD(CHORD_NT, SS_TAP(X_BSPC) "n't", KC_T, KC_SCLN) CSEP\
+    DEFINE_CHORD(CHORD_ED, SS_TAP(X_BSPC) "ed", KC_D_HRM, KC_SCLN) CSEP\
+    DEFINE_CHORD(CHORD_ING, SS_TAP(X_BSPC) "ing", KC_G_HRM, KC_SCLN)
 
 enum endgame_layers
 {
@@ -65,11 +68,16 @@ enum endgame_layers
     L_CHORD
 };
 
+/**
+ * Define custom keycodes, including one keycode for each chord
+ */
 #define CSEP ,
 #define DEFINE_CHORD(chordname, ...) chordname
 enum custom_keycodes
 {
     TOGGLE_COMBOS = SAFE_RANGE,
+    TOGGLE_CAMELCASE,
+    BASE_CHORD_RANGE = TOGGLE_CAMELCASE,
 
     DEFINE_ALL_CHORDS
 
@@ -133,7 +141,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                 C(KC_TAB), KC_TRNS, KC_TRNS, KC_TRNS, KC_MS_BTN2,
                 KC_CAPS, S(KC_TAB), KC_TAB, KC_LALT, LSG(KC_S),
 
-                KC_TRNS, KC_MS_BTN1,
+                TOGGLE_CAMELCASE, KC_MS_BTN1,
                 TOGGLE_COMBOS, KC_TRNS
             ),
 
@@ -152,6 +160,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
             )
 };
 
+/**
+ * Define all chord key sequences
+ */
 #define CSEP ;
 #define DEFINE_CHORD(chord_keycode, chord_str, ...) \
     const uint16_t PROGMEM combo##chord_keycode [] = { __VA_ARGS__, COMBO_END };
@@ -159,6 +170,9 @@ DEFINE_ALL_CHORDS;
 #undef DEFINE_CHORD
 #undef CSEP
 
+/**
+ * Define all actual combos, pairing chord key sequences to the appropriate chord keycode
+ */
 #define CSEP ,
 #define DEFINE_CHORD(chord_keycode, chord_str, ...) \
     COMBO(combo##chord_keycode, chord_keycode)
@@ -169,28 +183,65 @@ combo_t key_combos[] =
 #undef DEFINE_CHORD
 #undef CSEP
 
+void SendChord(char* Output)
+{
+    char* output = Output;
+    if (bCamelCaseMode && strlen(output) > 1)
+    {
+        char  FirstLetter[2] = { '\0', '\0' };
+        while ((FirstLetter[0] = *(output++)) == *SS_TAP(X_BSPC));
+        register_code(KC_LSFT);
+        send_string(FirstLetter);
+        unregister_code(KC_LSFT);
+    }
+    send_string(output+0);
+};
+
+/**
+ * Switch on every chord keycode and output the correct string
+ */
 #define CSEP
 #define DEFINE_CHORD(chord_keycode, chord_str, ...) \
     case chord_keycode: { \
         if (record->event.pressed) { \
-            SEND_STRING(chord_str); \
+            SendChord(chord_str); \
         } \
-        return false; \
+        break; \
     }
+
 bool process_record_user(uint16_t keycode, keyrecord_t* record)
 {
     switch(keycode)
     {
-
-        DEFINE_ALL_CHORDS
-
         case TOGGLE_COMBOS:
             if (record->event.pressed)
             {
                 combo_toggle();
             }
             return false;
+
+        case TOGGLE_CAMELCASE:
+            if (record->event.pressed)
+            {
+                bCamelCaseMode = !bCamelCaseMode;
+            }
+            return false;
+
+        DEFINE_ALL_CHORDS
+
     }
+
+    if (record->event.pressed &&
+        keycode > BASE_CHORD_RANGE)
+    {
+        if (!bCamelCaseMode)
+        {
+            tap_code(KC_SPC);
+        }
+        LastOutputChord = keycode;
+        return false;
+    }
+
     return true;
 };
 #undef DEFINE_CHORD
