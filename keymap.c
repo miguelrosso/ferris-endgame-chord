@@ -18,6 +18,9 @@
 bool bCamelCaseMode = false;
 int16_t LastOutputChord = 0;
 
+// TODO: We could simply allocate enough memory for each chordstr, write to it and point to it in combo_to_str_list, instead of storing all strs as 20 byte blocks
+#define MAX_CHORD_STRLEN 10
+
 #define DEFINE_ALL_CHORDS \
     DEFINE_CHORD(CHORD_YES, "yes", KC_Y, KC_S_HRM)   CSEP\
     DEFINE_CHORD(CHORD_NO, "no", KC_N, KC_SPC_HRM)   CSEP\
@@ -148,8 +151,6 @@ int16_t LastOutputChord = 0;
     DEFINE_CHORD(CHORD_SWITCH, "switch", KC_W, KC_I, KC_T) CSEP\
     DEFINE_CHORD(CHORD_REFLECTION, "reflection", KC_R, KC_F_HRM, KC_N) CSEP\
     DEFINE_CHORD(CHORD_NAME, "name", KC_N, KC_A_HRM, KC_M) CSEP\
-    DEFINE_CHORD(CHORD_MROSSO, "Miguel Rosso", KC_M, KC_R, KC_SPC_HRM) CSEP\
-    DEFINE_CHORD(CHORD_YVMWEB, "yesverymu.ch", KC_W, KC_V, KC_Y) CSEP\
     DEFINE_CHORD(CHORD_VYCPP, "vy::", KC_V, KC_Y, KC_SCLN) CSEP\
     DEFINE_CHORD(CHORD_NT, SS_TAP(X_BSPC) "n't", KC_T, KC_SCLN) CSEP\
     DEFINE_CHORD(CHORD_ED, SS_TAP(X_BSPC) "ed", KC_D_HRM, KC_SCLN) CSEP\
@@ -167,6 +168,9 @@ int16_t LastOutputChord = 0;
     DEFINE_CHORD(CHORD_BRACES, SS_TAP(X_BSPC) "{}" SS_TAP(X_LEFT), KC_Z_HRM, KC_C, KC_SCLN) CSEP\
     DEFINE_CHORD(CHORD_BLOCKS, SS_TAP(X_BSPC) "[]" SS_TAP(X_LEFT), KC_Z_HRM, KC_X, KC_SCLN) CSEP\
     DEFINE_CHORD(CHORD_EXCL, SS_TAP(X_BSPC) "!", KC_X, KC_C, KC_SCLN)
+
+#define DEFINE_ALL_COMPOUNDS \
+    DEFINE_COMPOUND(CHORD_ED, CHORD_BEGIN, "began")
 
 enum endgame_layers
 {
@@ -188,7 +192,9 @@ enum custom_keycodes
     TOGGLE_CAMELCASE,
     BASE_CHORD_RANGE = TOGGLE_CAMELCASE,
 
-    DEFINE_ALL_CHORDS
+    DEFINE_ALL_CHORDS,
+
+    FIRST_CHORD_INDEX = BASE_CHORD_RANGE+1,
 
 };
 #undef DEFINE_CHORD
@@ -292,9 +298,39 @@ combo_t key_combos[] =
 #undef DEFINE_CHORD
 #undef CSEP
 
-void SendChord(char* Output, int16_t Keycode)
+/**
+ * Define all chord to str pairs
+ */
+#define CSEP ,
+#define DEFINE_CHORD(chord_keycode, chord_str, ...) chord_str
+char combo_to_str_list[][MAX_CHORD_STRLEN] =
 {
-    char* output = Output;
+    DEFINE_ALL_CHORDS
+};
+#undef DEFINE_CHORD
+#undef CSEP
+
+/**
+ * Define all compound outputs
+ */
+#define CSEP ||
+#define DEFINE_COMPOUND(current_chord, prev_chord, compound_str) \
+    ((Keycode == current_chord && LastOutputChord == prev_chord) && strcpy(compound_output, compound_str))
+
+void SendChord(int16_t Keycode)
+{
+    char* output = combo_to_str_list[Keycode - FIRST_CHORD_INDEX];
+
+    char* compound_output = NULL;
+    if (LastOutputChord > BASE_CHORD_RANGE &&
+        DEFINE_ALL_COMPOUNDS) {
+        char* prev_str = combo_to_str_list[LastOutputChord - FIRST_CHORD_INDEX];
+        while (*(prev_str++) != '\0') tap_code(KC_BSPC);
+        if (!bCamelCaseMode) tap_code(KC_BSPC);
+        // override output
+        output = compound_output;
+    }
+
     if (bCamelCaseMode &&
         strlen(output) > 1)
     {
@@ -310,6 +346,10 @@ void SendChord(char* Output, int16_t Keycode)
     send_string(output+0);
 };
 
+#undef DEFINE_COMPOUND
+#undef CSEP
+
+
 /**
  * Switch on every chord keycode and output the correct string
  */
@@ -317,7 +357,7 @@ void SendChord(char* Output, int16_t Keycode)
 #define DEFINE_CHORD(chord_keycode, chord_str, ...) \
     case chord_keycode: { \
         if (record->event.pressed) { \
-            SendChord(chord_str, chord_keycode); \
+            SendChord(chord_keycode); \
         } \
         break; \
     }
