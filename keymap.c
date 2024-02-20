@@ -19,7 +19,8 @@ bool bCamelCaseMode = false;
 int16_t LastOutputChord = 0;
 
 // TODO: We could simply allocate enough memory for each chordstr, write to it and point to it in combo_to_str_list, instead of storing all strs as 20 byte blocks
-#define MAX_CHORD_STRLEN 10
+#define MAX_CHORD_STRLEN 20
+char LastOutputChordStr[MAX_CHORD_STRLEN] = "";
 
 #define DEFINE_ALL_CHORDS \
     DEFINE_CHORD(CHORD_YES, "yes", KC_Y, KC_S_HRM)   CSEP\
@@ -82,8 +83,8 @@ int16_t LastOutputChord = 0;
     DEFINE_CHORD(CHORD_AT, "at", KC_A_HRM, KC_T) CSEP\
     DEFINE_CHORD(CHORD_CHORD, "chord", KC_K_HRM, KC_O, KC_R, KC_D_HRM) CSEP\
     DEFINE_CHORD(CHORD_ABOUT, "about", KC_A_HRM, KC_B) CSEP\
+    DEFINE_CHORD(CHORD_BECAUSE, "because", KC_B, KC_C) CSEP\
     DEFINE_CHORD(CHORD_CAN, "can", KC_C, KC_A_HRM, KC_N) CSEP\
-    DEFINE_CHORD(CHORD_COULD, "could", KC_C, KC_O, KC_U) CSEP\
     DEFINE_CHORD(CHORD_DO, "do", KC_D_HRM, KC_O) CSEP\
     DEFINE_CHORD(CHORD_THIS, "this", KC_D_HRM, KC_I, KC_S_HRM) CSEP\
     DEFINE_CHORD(CHORD_BUT, "but", KC_B, KC_U) CSEP\
@@ -170,7 +171,29 @@ int16_t LastOutputChord = 0;
     DEFINE_CHORD(CHORD_EXCL, SS_TAP(X_BSPC) "!", KC_X, KC_C, KC_SCLN)
 
 #define DEFINE_ALL_COMPOUNDS \
-    DEFINE_COMPOUND(CHORD_ED, CHORD_BEGIN, "began")
+    DEFINE_COMPOUND(CHORD_ED, CHORD_BEGIN, "began") CSEP\
+    DEFINE_COMPOUND(CHORD_ED, CHORD_CAN, "could") CSEP\
+    DEFINE_COMPOUND(CHORD_ED, CHORD_TAKE, "took") CSEP\
+    DEFINE_COMPOUND(CHORD_ED, CHORD_DO, "did") CSEP\
+    DEFINE_COMPOUND(CHORD_ED, CHORD_SEE, "saw") CSEP\
+    DEFINE_COMPOUND(CHORD_ED, CHORD_COME, "came") CSEP\
+    DEFINE_COMPOUND(CHORD_ED, CHORD_USE, "used") CSEP\
+    DEFINE_COMPOUND(CHORD_ED, CHORD_FIND, "found") CSEP\
+    DEFINE_COMPOUND(CHORD_ED, CHORD_TELL, "told") CSEP\
+    DEFINE_COMPOUND(CHORD_ED, CHORD_TRY, "tried") CSEP\
+    DEFINE_COMPOUND(CHORD_ED, CHORD_FEEL, "felt") CSEP\
+    DEFINE_COMPOUND(CHORD_ED, CHORD_BE, "was") CSEP\
+    DEFINE_COMPOUND(CHORD_ED, CHORD_MEAN, "meant") CSEP\
+    DEFINE_COMPOUND(CHORD_ED, CHORD_GET, "got") CSEP\
+    DEFINE_COMPOUND(CHORD_ED, CHORD_HAVE, "had") CSEP\
+    DEFINE_COMPOUND(CHORD_ING, CHORD_BEGIN, "beginning") CSEP\
+    DEFINE_COMPOUND(CHORD_ING, CHORD_TAKE, "taking") CSEP\
+    DEFINE_COMPOUND(CHORD_ING, CHORD_COME, "coming") CSEP\
+    DEFINE_COMPOUND(CHORD_ING, CHORD_USE, "using") CSEP\
+    DEFINE_COMPOUND(CHORD_ING, CHORD_LET, "letting") CSEP\
+    DEFINE_COMPOUND(CHORD_ING, CHORD_TRY, "trying") CSEP\
+    DEFINE_COMPOUND(CHORD_ING, CHORD_GET, "getting") CSEP\
+    DEFINE_COMPOUND(CHORD_ING, CHORD_LIKE, "liking")
 
 enum endgame_layers
 {
@@ -190,10 +213,10 @@ enum custom_keycodes
 {
     TOGGLE_COMBOS = SAFE_RANGE,
     TOGGLE_CAMELCASE,
-    BASE_CHORD_RANGE = TOGGLE_CAMELCASE,
 
     DEFINE_ALL_CHORDS,
 
+    BASE_CHORD_RANGE = TOGGLE_CAMELCASE,
     FIRST_CHORD_INDEX = BASE_CHORD_RANGE+1,
 
 };
@@ -299,36 +322,24 @@ combo_t key_combos[] =
 #undef CSEP
 
 /**
- * Define all chord to str pairs
- */
-#define CSEP ,
-#define DEFINE_CHORD(chord_keycode, chord_str, ...) chord_str
-char combo_to_str_list[][MAX_CHORD_STRLEN] =
-{
-    DEFINE_ALL_CHORDS
-};
-#undef DEFINE_CHORD
-#undef CSEP
-
-/**
  * Define all compound outputs
  */
 #define CSEP ||
 #define DEFINE_COMPOUND(current_chord, prev_chord, compound_str) \
     ((Keycode == current_chord && LastOutputChord == prev_chord) && strcpy(compound_output, compound_str))
 
-void SendChord(int16_t Keycode)
+void SendChord(int16_t Keycode, char* Output)
 {
-    char* output = combo_to_str_list[Keycode - FIRST_CHORD_INDEX];
+    char* output = Output;
 
-    char* compound_output = NULL;
+    char compound_output[MAX_CHORD_STRLEN] = "";
     if (LastOutputChord > BASE_CHORD_RANGE &&
-        DEFINE_ALL_COMPOUNDS) {
-        char* prev_str = combo_to_str_list[LastOutputChord - FIRST_CHORD_INDEX];
+        (DEFINE_ALL_COMPOUNDS)) {
+        char* prev_str = &LastOutputChordStr[0];
         while (*(prev_str++) != '\0') tap_code(KC_BSPC);
         if (!bCamelCaseMode) tap_code(KC_BSPC);
         // override output
-        output = compound_output;
+        output = &compound_output[0];
     }
 
     if (bCamelCaseMode &&
@@ -344,6 +355,9 @@ void SendChord(int16_t Keycode)
     }
     // TODO:  handle 'a' (single letter) case
     send_string(output+0);
+
+    LastOutputChord = Keycode;
+    strcpy(LastOutputChordStr, Output);
 };
 
 #undef DEFINE_COMPOUND
@@ -357,7 +371,7 @@ void SendChord(int16_t Keycode)
 #define DEFINE_CHORD(chord_keycode, chord_str, ...) \
     case chord_keycode: { \
         if (record->event.pressed) { \
-            SendChord(chord_keycode); \
+            SendChord(chord_keycode, chord_str); \
         } \
         break; \
     }
@@ -391,7 +405,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t* record)
         {
             tap_code(KC_SPC);
         }
-        LastOutputChord = keycode;
         return false;
     }
 
